@@ -1,8 +1,14 @@
 import { useState } from "react";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import useTaskStore from "@/app/store/task/task";
+import { useRouter } from "next/navigation";
 
-const TaskFormCard = () => {
+const TaskFormCard = ({ boardId, setIsFetchTask, isFetchTask }) => {
   const [showForm, setShowForm] = useState(false);
-  const statusOptions = ["Todo", "Pending", "Done"];
+
+  const router = useRouter();
+
+  const { createTaskAPI } = useTaskStore();
 
   const handleAddTaskClick = () => {
     setShowForm(true);
@@ -10,8 +16,34 @@ const TaskFormCard = () => {
   const handleCancelTaskClick = () => {
     setShowForm(false);
   };
-  const onHandleSubmitForm = (event) => {
+  const handleSwitchChange = (e) => {
+    setTaskFormState({
+      ...taskFormState,
+      task_is_complete: e.target.checked,
+    });
+  };
+
+  const [taskFormState, setTaskFormState] = useState({
+    task_name: "",
+    task_due_date: "",
+    task_description: "",
+    task_is_complete: false,
+  });
+
+  const toggleSwitch = () => {
+    setTaskFormState((prevState) => ({
+      ...prevState,
+      task_is_complete: !prevState.task_is_complete,
+    }));
+  };
+
+  const onHandleSubmitForm = async (event) => {
     event.preventDefault();
+    const result = await createTaskAPI(boardId, taskFormState);
+    if (result.success) {
+      setShowForm(false);
+      setIsFetchTask(!isFetchTask);
+    }
   };
   return (
     <>
@@ -32,28 +64,62 @@ const TaskFormCard = () => {
             id="taskName"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2"
             placeholder="Task name"
+            value={taskFormState.task_name}
+            onChange={(e) =>
+              setTaskFormState({ ...taskFormState, task_name: e.target.value })
+            }
           />
           <textarea
             id="taskDesc"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2"
             placeholder="Task Description"
+            value={taskFormState.task_description}
+            onChange={(e) =>
+              setTaskFormState({
+                ...taskFormState,
+                task_description: e.target.value,
+              })
+            }
           />
           <input
             type="date"
             id="taskDueDate"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2"
+            value={taskFormState.task_due_date}
+            onChange={(e) =>
+              setTaskFormState({
+                ...taskFormState,
+                task_due_date: e.target.value,
+              })
+            }
           />
-          <select
-            id="status"
-            name="status"
-            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4"
-          >
-            {statusOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center mb-2">
+            <label
+              htmlFor="taskIsComplete"
+              className="text-sm text-gray-700 mr-2"
+            >
+              Complete:
+            </label>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="taskIsComplete"
+                checked={taskFormState.task_is_complete}
+                onChange={toggleSwitch}
+                className="sr-only peer"
+              />
+              <div
+                className={`w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-green-500 peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 dark:bg-gray-700`}
+              ></div>
+              <div
+                className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white border border-gray-300 rounded-full transition-transform duration-200 ${
+                  taskFormState.task_is_complete
+                    ? "transform translate-x-full"
+                    : ""
+                }`}
+              ></div>
+            </label>
+          </div>
           <div className="flex justify-end">
             <button
               type="submit"
